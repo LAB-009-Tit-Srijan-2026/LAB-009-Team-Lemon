@@ -1,1 +1,6 @@
-This is a sample transcript for the AI Learning Companion. It contains information about machine learning, neural networks, and AI concepts. The video explains how neural networks work, starting with basic perceptrons and moving to deep learning architectures. Key topics include activation functions, backpropagation, and training data. Timestamps are approximate: 0-30 seconds intro, 30-60 perceptrons, 60-90 backprop, 90-120 deep learning.
+Neural networks are a part of machine learning.
+Backpropagation is used to train models.
+A neural network is built from layers of neurons.
+Activation functions control whether a neuron fires.
+Training data teaches the model to make predictions.
+This transcript is intentionally simple and fixed for demo reliability.

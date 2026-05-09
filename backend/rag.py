@@ -51,6 +51,8 @@ def ask_question(video_id, question, history=[]):
             best_idx = int(np.argmax(similarities))
 
     best_chunk = texts[best_idx]
-    answer = best_chunk.get('text', '').strip() or "I found transcript content, but the text is empty."
+    answer = best_chunk.get('text', '').strip()
+    if not answer:
+        answer = "I found a relevant section, but the transcript chunk is empty."
     timestamps = [best_chunk.get('start_time', 0), best_chunk.get('end_time', 0)]
     return answer, timestamps
