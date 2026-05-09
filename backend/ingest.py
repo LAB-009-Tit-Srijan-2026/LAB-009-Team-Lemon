@@ -245,9 +245,16 @@ def ingest_video(video_url, video_id):
         if entries:
             segments = _create_segments_from_entries(entries)
             transcript = " ".join([seg["text"] for seg in segments])
-
+    # If we couldn't obtain a transcript from YouTube, avoid silently falling back
+    # to a demo transcript. Ask the caller to provide a file or configure a
+    # transcription provider instead.
     if not transcript:
-        transcript = load_transcript()
-        segments = [{"text": transcript, "start": 0.0, "end": len(transcript.split()) * 0.5}]
+        # If AssemblyAI is configured, instruct user to upload a file for transcription
+        if assemblyai_available():
+            raise RuntimeError("No transcript found for the YouTube URL. Upload media via /ingest-file to transcribe with AssemblyAI.")
+        # Otherwise, instruct user to install youtube_transcript_api or upload a file
+        raise RuntimeError(
+            "No transcript available. Install 'youtube_transcript_api' in the backend, set up AssemblyAI, or use /ingest-file to upload media for transcription."
+        )
 
     ingest_transcript(transcript, video_id, segments)

@@ -1,6 +1,1 @@
-Neural networks are a part of machine learning.
-Backpropagation is used to train models.
-A neural network is built from layers of neurons.
-Activation functions control whether a neuron fires.
-Training data teaches the model to make predictions.
-This transcript is intentionally simple and fixed for demo reliability.
+ 
