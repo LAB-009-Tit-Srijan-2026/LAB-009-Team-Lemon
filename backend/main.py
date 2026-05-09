@@ -48,7 +48,8 @@ def root():
             "Contextual Q&A from video transcripts",
             "Smart summaries (overall, topic-wise, last 5 minutes)",
             "Jump-to-moment navigation via timestamps",
-            "Session memory for multi-turn conversations"
+            "Session memory for multi-turn conversations",
+            "Free AssemblyAI transcription fallback when YouTube captions are missing"
         ]
     }
 

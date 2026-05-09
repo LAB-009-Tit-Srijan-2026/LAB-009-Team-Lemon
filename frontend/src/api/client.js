@@ -1,16 +1,23 @@
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
-export async function ingestVideo(videoUrl) {
-  const response = await fetch(`${API_BASE}/ingest`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ video_url: videoUrl })
-  });
-  const result = await response.json();
+async function parseResponse(response, fallbackMessage) {
+  const result = await response.json().catch(() => ({}));
   if (response.ok) {
     return result;
-  } else {
-    throw new Error(result.detail || result.message || 'Failed to ingest video');
+  }
+  throw new Error(result.detail || result.message || fallbackMessage);
+}
+
+export async function ingestVideo(videoUrl) {
+  try {
+    const response = await fetch(`${API_BASE}/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ video_url: videoUrl })
+    });
+    return await parseResponse(response, 'Failed to ingest video');
+  } catch (error) {
+    throw new Error(`Backend unreachable at ${API_BASE}. Start the API server and try again.`);
   }
 }
 
@@ -21,15 +28,15 @@ export async function ingestFile(file, title = '') {
     formData.append('title', title);
   }
 
-  const response = await fetch(`${API_BASE}/ingest-file`, {
-    method: 'POST',
-    body: formData,
-  });
-  const result = await response.json();
-  if (response.ok) {
-    return result;
+  try {
+    const response = await fetch(`${API_BASE}/ingest-file`, {
+      method: 'POST',
+      body: formData,
+    });
+    return await parseResponse(response, 'Failed to ingest file');
+  } catch (error) {
+    throw new Error(`Backend unreachable at ${API_BASE}. Start the API server and try again.`);
   }
-  throw new Error(result.detail || result.message || 'Failed to ingest file');
 }
 
 export async function getOverallSummary(videoId) {

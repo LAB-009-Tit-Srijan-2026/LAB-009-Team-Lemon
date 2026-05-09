@@ -3,6 +3,7 @@ import re
 import importlib
 import os
 import subprocess
+import sys
 import tempfile
 import shutil
 from .utils.chunker import chunk_transcript
@@ -265,13 +266,7 @@ def _download_youtube_audio(url: str) -> str | None:
                 "outtmpl": output_template,
                 "quiet": True,
                 "no_warnings": True,
-                "postprocessors": [
-                    {
-                        "key": "FFmpegExtractAudio",
-                        "preferredcodec": "mp3",
-                        "preferredquality": "128",
-                    }
-                ],
+                "noplaylist": True,
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.extract_info(url, download=True)
@@ -279,14 +274,12 @@ def _download_youtube_audio(url: str) -> str | None:
             print(f"yt-dlp package audio download failed: {package_error}; trying module command")
             subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yt_dlp",
-                    "-x",
-                    "--audio-format",
-                    "mp3",
-                    "--audio-quality",
-                    "128K",
+                    "--no-playlist",
+                    "-f",
+                    "bestaudio/best",
                     "-o",
                     output_template,
                     url,
@@ -522,13 +515,13 @@ def ingest_video(video_url, video_id):
             source = "youtube_auto_subtitles"
 
     if not transcript:
-        # Try to transcribe audio via AssemblyAI if configured.
+        # Free fallback: transcribe the downloaded audio with AssemblyAI.
         if assemblyai_available():
             tmp_path = None
             try:
                 tmp_path = _download_youtube_audio(canonical_url)
                 if tmp_path:
-                    print(f"Downloaded audio to {tmp_path} for transcription")
+                    print(f"Downloaded audio to {tmp_path} for AssemblyAI transcription")
                     result = transcribe_file(tmp_path)
                     transcript = str(result.get("text", "")).strip()
                     segments = _create_segments_from_assemblyai(result)
