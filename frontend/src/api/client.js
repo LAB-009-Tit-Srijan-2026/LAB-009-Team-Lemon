@@ -39,6 +39,11 @@ export async function ingestFile(file, title = '') {
   }
 }
 
+export async function getIngestStatus(jobId) {
+  const response = await fetch(`${API_BASE}/ingest-status/${jobId}`);
+  return await parseResponse(response, 'Failed to get ingest status');
+}
+
 export async function getOverallSummary(videoId) {
   const response = await fetch(`${API_BASE}/summary/${videoId}`);
   if (!response.ok) throw new Error('Failed to get summary');

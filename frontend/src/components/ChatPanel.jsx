@@ -118,6 +118,7 @@ export default function ChatPanel({ videoId, onTimestampClick }) {
           chatHistory.map((msg) => {
             const isAi = msg.role === 'ai';
             const parsed = isAi ? splitAnswer(msg.content) : { note: '', body: msg.content };
+            const isStreaming = isAi && isAsking && !msg.content;
 
             return (
             <div key={msg.id} className="fade-in" style={{
@@ -133,6 +134,19 @@ export default function ChatPanel({ videoId, onTimestampClick }) {
               boxShadow: '0 10px 20px -10px rgba(0,0,0,0.1)',
               border: msg.role === 'ai' ? '1px solid var(--outline-variant)' : 'none'
             }}>
+              {isStreaming && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', minWidth: '280px' }}>
+                  <div className="skeleton skeleton-line" style={{ width: '72%', height: '12px' }} />
+                  <div className="skeleton skeleton-line" style={{ width: '92%', height: '12px' }} />
+                  <div className="skeleton skeleton-line" style={{ width: '64%', height: '12px' }} />
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                    <span className="typing-dot" />
+                    <span className="typing-dot" />
+                    <span className="typing-dot" />
+                    Thinking...
+                  </div>
+                </div>
+              )}
               {parsed.note && (
                 <div style={{ marginBottom: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.25)', color: '#fbbf24', fontSize: '0.85rem' }}>
                   {parsed.note}

@@ -6,6 +6,8 @@ from fastapi import UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 import uuid
 import json
 from .ingest import ingest_video, ingest_assemblyai_file
@@ -27,6 +29,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+executor = ThreadPoolExecutor(max_workers=2)
+ingest_jobs: dict[str, dict] = {}
+ingest_jobs_lock = Lock()
+
 class IngestRequest(BaseModel):
     video_url: str
 
@@ -38,6 +44,54 @@ class AskRequest(BaseModel):
     video_id: str
     question: str
     session_id: str = None
+
+
+def _set_ingest_job(job_id: str, payload: dict):
+    with ingest_jobs_lock:
+        ingest_jobs[job_id] = payload
+
+
+def _get_ingest_job(job_id: str):
+    with ingest_jobs_lock:
+        return ingest_jobs.get(job_id)
+
+
+def _run_ingest_video_job(job_id: str, video_id: str, video_url: str):
+    try:
+        result = ingest_video(video_url, video_id)
+        _set_ingest_job(job_id, {
+            "job_id": job_id,
+            "video_id": video_id,
+            "status": "completed",
+            "message": "Video ingested successfully.",
+            "result": result,
+        })
+    except Exception as e:
+        _set_ingest_job(job_id, {
+            "job_id": job_id,
+            "video_id": video_id,
+            "status": "failed",
+            "message": str(e),
+        })
+
+
+def _run_ingest_file_job(job_id: str, video_id: str, file_bytes: bytes, file_name: str):
+    try:
+        result = ingest_assemblyai_file(file_bytes, file_name, video_id)
+        _set_ingest_job(job_id, {
+            "job_id": job_id,
+            "video_id": video_id,
+            "status": "completed",
+            "message": "File ingested successfully.",
+            "result": result,
+        })
+    except Exception as e:
+        _set_ingest_job(job_id, {
+            "job_id": job_id,
+            "video_id": video_id,
+            "status": "failed",
+            "message": str(e),
+        })
 
 @app.get("/")
 def root():
@@ -60,18 +114,21 @@ def ping():
 @app.post("/ingest")
 def ingest(request: IngestRequest):
     try:
+        job_id = str(uuid.uuid4())
         video_id = str(uuid.uuid4())
-        print(f"Ingest request received for video_url={request.video_url} assign video_id={video_id}")
-        ingest_result = ingest_video(request.video_url, video_id)
-        return {
+        print(f"Ingest request received for video_url={request.video_url} assign video_id={video_id} job_id={job_id}")
+        _set_ingest_job(job_id, {
+            "job_id": job_id,
             "video_id": video_id,
-            "status": "success",
-            "message": f"Video ingested successfully. Use video_id '{video_id}' for queries.",
-            "source": ingest_result.get("source", "unknown"),
-            "method": ingest_result.get("method", "unknown"),
-            "chunk_count": ingest_result.get("chunk_count", 0),
-            "transcript_length": ingest_result.get("transcript_length", 0),
-            "quality": ingest_result.get("quality", {}),
+            "status": "processing",
+            "message": "Ingest job started",
+        })
+        executor.submit(_run_ingest_video_job, job_id, video_id, request.video_url)
+        return {
+            "job_id": job_id,
+            "video_id": video_id,
+            "status": "processing",
+            "message": f"Video ingest started. Use job_id '{job_id}' to check progress.",
         }
     except Exception as e:
         print(f"Ingest failed: {e}")
@@ -81,23 +138,34 @@ def ingest(request: IngestRequest):
 @app.post("/ingest-file")
 async def ingest_file(file: UploadFile = File(...), title: str | None = Form(None)):
     try:
+        job_id = str(uuid.uuid4())
         video_id = str(uuid.uuid4())
         file_bytes = await file.read()
-        print(f"File ingest request received for file={file.filename} assign video_id={video_id}")
-        ingest_result = ingest_assemblyai_file(file_bytes, file.filename or title or "upload", video_id)
-        return {
+        print(f"File ingest request received for file={file.filename} assign video_id={video_id} job_id={job_id}")
+        _set_ingest_job(job_id, {
+            "job_id": job_id,
             "video_id": video_id,
-            "status": "success",
-            "message": f"File ingested successfully. Use video_id '{video_id}' for queries.",
-            "source": ingest_result.get("source", "upload"),
-            "method": ingest_result.get("method", "assemblyai_file"),
-            "chunk_count": ingest_result.get("chunk_count", 0),
-            "transcript_length": ingest_result.get("transcript_length", 0),
-            "quality": ingest_result.get("quality", {}),
+            "status": "processing",
+            "message": "Ingest job started",
+        })
+        executor.submit(_run_ingest_file_job, job_id, video_id, file_bytes, file.filename or title or "upload")
+        return {
+            "job_id": job_id,
+            "video_id": video_id,
+            "status": "processing",
+            "message": f"File ingest started. Use job_id '{job_id}' to check progress.",
         }
     except Exception as e:
         print(f"File ingest failed: {e}")
         raise HTTPException(status_code=500, detail=f"File ingest failed: {str(e)}")
+
+
+@app.get("/ingest-status/{job_id}")
+def ingest_status(job_id: str):
+    job = _get_ingest_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Ingest job not found")
+    return job
 
 @app.post("/ask")
 def ask(request: AskRequest):

@@ -67,11 +67,26 @@ export default function SummaryDashboard({ videoId, onTimestampClick }) {
 
   if (loading) {
     return (
-    <div className="glass-panel" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1.5rem' }}>
-        <div className="animate-pulse" style={{ background: 'var(--primary-fixed)', padding: '1.5rem', borderRadius: '50%' }}>
-           <Loader2 className="animate-spin" size={32} color="var(--primary)" />
+      <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+          <div className="skeleton skeleton-line" style={{ width: '38%', height: '18px' }} />
+          <Loader2 className="animate-spin" size={20} color="var(--primary)" />
         </div>
-        <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Generating comprehensive summaries...</p>
+        <div className="skeleton-card" style={{ padding: '1rem' }}>
+          <div className="skeleton skeleton-line" style={{ width: '24%', marginBottom: '0.75rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '92%', marginBottom: '0.6rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '86%', marginBottom: '0.6rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '70%' }} />
+        </div>
+        <div className="skeleton-card" style={{ padding: '1rem' }}>
+          <div className="skeleton skeleton-line" style={{ width: '30%', marginBottom: '0.9rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '88%', marginBottom: '0.6rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '78%', marginBottom: '0.6rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '64%' }} />
+        </div>
+        <p style={{ color: 'var(--text-secondary)', fontWeight: 500, marginTop: 'auto', textAlign: 'center' }}>
+          Building summaries in the background...
+        </p>
       </div>
     );
   }
