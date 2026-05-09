@@ -1,0 +1,29 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.python-version
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Chroma DB files and temporary data
+chroma_db/
+temp/
+
+# Local config and secrets
+*.env
+.env
+*.ini
+*.json
+secrets.yaml
+credentials*
+
+# Editor and OS files
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
