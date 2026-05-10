@@ -1,0 +1,35 @@
+{
+  "name": "alexandria-ai-extension",
+  "version": "1.0.0",
+  "description": "Alexandria AI - Intelligent video learning companion",
+  "private": true,
+  "scripts": {
+    "dev": "webpack --mode development --watch",
+    "build": "webpack --mode production",
+    "build:clean": "rm -rf dist && npm run build",
+    "lint": "eslint src/**/*.js src/**/*.jsx",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "@babel/preset-react": "^7.22.0",
+    "@types/chrome": "^0.0.240",
+    "babel-loader": "^9.1.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.8.0",
+    "eslint": "^8.50.0",
+    "eslint-config-react-app": "^7.0.1",
+    "file-loader": "^6.2.0",
+    "jest": "^29.7.0",
+    "mini-css-extract-plugin": "^2.7.0",
+    "style-loader": "^3.3.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.0"
+  }
+}
