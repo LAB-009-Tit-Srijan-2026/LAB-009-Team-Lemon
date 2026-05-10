@@ -7,6 +7,7 @@ import time
 import tempfile
 import shutil
 import hashlib
+import html
 from .utils.chunker import chunk_transcript
 from .utils.transcript_loader import load_transcript
 from .utils.transcript_store import store_chunks
@@ -51,34 +52,33 @@ def _load_youtube_transcript(url: str):
             print(f"Using YouTubeTranscriptApi.list_transcripts for {video_id}")
             transcripts = YouTubeTranscriptApi.list_transcripts(video_id)
 
-            # Prefer manually created English, then generated English, then translations
+            # Prefer English transcripts first.
             for finder in ("find_manually_created_transcript", "find_generated_transcript", "find_transcript"):
                 if hasattr(transcripts, finder):
-                    # Prefer manually created English, then generated English, then any
-                    # available transcript, then translated variants if possible.
+                    try:
                         t = getattr(transcripts, finder)(["en"])
                         return list(t.fetch())
                     except Exception:
                         pass
 
+            # Use any directly available transcript before attempting translation.
+            for t in transcripts:
+                try:
+                    entries = list(t.fetch())
+                    if entries:
+                        print(f"Using available transcript without translation: {len(entries)} entries from {t}")
+                        return entries
+                except Exception:
+                    continue
+
+            # Translation is a later fallback.
             for t in transcripts:
                 try:
                     translated = t.translate("en")
-                    # If English is unavailable, use whatever transcript exists rather
-                    # than forcing an audio transcription path. This is especially useful
-                    # for videos that only expose auto-generated captions in another
-                    # language (for example Hindi auto-generated captions).
-                    for t in transcripts:
-                        try:
-                            entries = list(t.fetch())
-                            if entries:
-                                print(f"Using available transcript without translation: {len(entries)} entries from {t}")
-                                return entries
-                        except Exception:
-                            continue
                     entries = list(translated.fetch())
-                    print(f"Translated transcript fetched: {len(entries)} entries")
-                    return entries
+                    if entries:
+                        print(f"Translated transcript fetched: {len(entries)} entries")
+                        return entries
                 except Exception:
                     continue
 
@@ -99,35 +99,22 @@ def _load_youtube_transcript(url: str):
         except Exception:
             transcripts = None
 
-        # If we got a TranscriptList, try to pick English or translated transcripts
+        # If we got a TranscriptList, try to pick English or any available transcript.
         if transcripts is not None:
-            # Try methods that may exist on TranscriptList
             for finder in ("find_manually_created_transcript", "find_generated_transcript", "find_transcript"):
                 if hasattr(transcripts, finder):
-                # If we got a TranscriptList, try to pick English or any available transcript.
+                    try:
                         t = getattr(transcripts, finder)(["en"])
                         return list(t.fetch())
                     except Exception:
                         pass
 
-            # Fallback: try to find an item with language 'en' or 'English' in its repr
             for t in transcripts:
                 try:
-                    if getattr(t, 'language_code', None) == 'en' or 'English' in str(t):
-                        try:
-                    for t in transcripts:
-                        try:
-                            entries = list(t.fetch())
-                            if entries:
-                                print(f"Using available instance transcript without translation: {len(entries)} entries from {t}")
-                                return entries
-                        except Exception:
-                            continue
-                            entries = list(t.fetch())
-                            print(f"Instance transcript fetched: {len(entries)} entries from {t}")
-                            return entries
-                        except Exception:
-                            pass
+                    entries = list(t.fetch())
+                    if entries:
+                        print(f"Using available instance transcript without translation: {len(entries)} entries from {t}")
+                        return entries
                 except Exception:
                     continue
 
@@ -196,6 +183,32 @@ def _parse_timestamp(value: str) -> float:
     return hours * 3600 + minutes * 60 + seconds + millis / 1000.0
 
 
+def _clean_caption_payload(payload: str) -> str:
+    payload = html.unescape(str(payload or ""))
+    payload = re.sub(r"<\d{2}:\d{2}:\d{2}\.\d{3}>", " ", payload)
+    payload = re.sub(r"</?c(?:\.[^>]*)?>", " ", payload)
+    payload = re.sub(r"</?[^>]+>", " ", payload)
+    payload = re.sub(r"\{\\an\d+\}", " ", payload)
+    payload = re.sub(r"\s+", " ", payload).strip(" -")
+    return payload
+
+
+def _trim_caption_overlap(current_text: str, previous_text: str) -> str:
+    current_words = current_text.split()
+    previous_words = previous_text.split()
+    if not current_words or not previous_words:
+        return current_text
+
+    max_overlap = min(len(current_words), len(previous_words), 32)
+    for overlap in range(max_overlap, 0, -1):
+        current_prefix = [word.lower() for word in current_words[:overlap]]
+        previous_suffix = [word.lower() for word in previous_words[-overlap:]]
+        if current_prefix == previous_suffix:
+            trimmed = " ".join(current_words[overlap:]).strip()
+            return trimmed
+    return current_text
+
+
 def _parse_caption_file(path: str):
     entries = []
     try:
@@ -222,7 +235,7 @@ def _parse_caption_file(path: str):
             start_raw, end_raw = [part.strip().split(" ")[0] for part in time_line.split("-->")[:2]]
             start = _parse_timestamp(start_raw)
             end = _parse_timestamp(end_raw)
-            payload = " ".join(payload_lines).strip()
+            payload = _clean_caption_payload(" ".join(payload_lines))
             if payload:
                 entries.append({"text": payload, "start": start, "duration": max(0.5, end - start)})
         except Exception:
@@ -410,14 +423,17 @@ def _download_youtube_audio(url: str) -> str | None:
 
 def _create_segments_from_entries(entries):
     segments = []
+    previous_text = ""
     for entry in entries:
-        text = str(_get_entry_value(entry, "text", "")).strip()
+        text = _clean_caption_payload(_get_entry_value(entry, "text", ""))
+        text = _trim_caption_overlap(text, previous_text)
         if not text:
             continue
         start = float(_get_entry_value(entry, "start", 0.0) or 0.0)
         duration = float(_get_entry_value(entry, "duration", 0.0) or 0.0)
         end = start + duration if duration > 0 else start + 2.0
         segments.append({"text": text, "start": start, "end": end})
+        previous_text = text
     return segments
 
 
