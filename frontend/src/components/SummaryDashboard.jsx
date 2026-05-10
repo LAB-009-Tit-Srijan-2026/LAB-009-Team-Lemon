@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlignLeft, List, History, Loader2, PlayCircle, Star } from 'lucide-react';
-import { getOverallSummary, getTopicSummaries, getLastMinutesSummary, getQuality } from '../api/client';
+import { getAnalysis } from '../api/client';
 
-export default function SummaryDashboard({ videoId, onTimestampClick }) {
+export default function SummaryDashboard({ videoId, onTimestampClick, isProcessing = false, previewTitle = '', previewSummary = '' }) {
   const [overall, setOverall] = useState(null);
   const [topics, setTopics] = useState(null);
   const [recent, setRecent] = useState(null);
@@ -15,48 +15,54 @@ export default function SummaryDashboard({ videoId, onTimestampClick }) {
     if (!videoId) return;
 
     const requestId = ++requestSeq.current;
-    setOverall(null);
+    let stopped = false;
+    setOverall(previewSummary || null);
     setTopics(null);
-    setRecent(null);
+    setRecent(previewSummary || null);
     setQuality(null);
     setError('');
+    setLoading(!previewSummary);
 
-    const fetchSummaries = async () => {
-      setLoading(true);
+    const fetchAnalysis = async () => {
       try {
-        const [overallData, topicsData, recentData] = await Promise.all([
-          getOverallSummary(videoId).catch(() => null),
-          getTopicSummaries(videoId).catch(() => null),
-          getLastMinutesSummary(videoId, 5).catch(() => null)
-        ]);
-
-        const qualityData = await getQuality(videoId).catch(() => null);
-
-        if (requestSeq.current !== requestId) return;
+        const data = await getAnalysis(videoId);
+        if (stopped || requestSeq.current !== requestId) return 'stale';
         
-        if (overallData) setOverall(overallData.summary);
-        if (topicsData) setTopics(topicsData.topics);
-        if (recentData) setRecent(recentData.summary);
-        if (qualityData) setQuality(qualityData.quality);
-        if (!overallData && !topicsData && !recentData) {
-          setError('No summary data returned for this video yet.');
+        const summaryReady = data.summary && !data.summary.startsWith('Summary is not available yet');
+        if (summaryReady) {
+          setOverall(data.summary);
+        } else if (previewSummary) {
+          setOverall(previewSummary);
         }
+        if (Array.isArray(data.topics)) setTopics(data.topics);
+        if (data.recent_summary && data.recent_summary !== 'No content available') setRecent(data.recent_summary);
+        if (data.quality) setQuality(data.quality);
+        setLoading(data.status !== 'success');
+        return data.status;
       } catch (err) {
-        if (requestSeq.current !== requestId) return;
-        setError(err.message || 'Failed to fetch summaries');
-        console.error("Failed to fetch summaries", err);
-      } finally {
-        if (requestSeq.current === requestId) {
-          setLoading(false);
+        if (stopped || requestSeq.current !== requestId) return 'stale';
+        if (!previewSummary) {
+          setError(err.message || 'Failed to fetch summaries');
         }
+        console.error("Failed to fetch summaries", err);
+        setLoading(false);
+        return 'error';
       }
     };
 
-    fetchSummaries();
+    fetchAnalysis();
+    const interval = isProcessing
+      ? window.setInterval(() => {
+          void fetchAnalysis();
+        }, 1500)
+      : null;
+
     return () => {
+      stopped = true;
+      if (interval) window.clearInterval(interval);
       requestSeq.current += 1;
     };
-  }, [videoId]);
+  }, [videoId, isProcessing, previewSummary]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -65,18 +71,35 @@ export default function SummaryDashboard({ videoId, onTimestampClick }) {
   };
 
 
-  if (loading) {
+  const hasVisibleContent = Boolean(overall || (topics && topics.length > 0) || recent || previewSummary);
+
+  if (loading && !hasVisibleContent) {
     return (
-    <div className="glass-panel" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1.5rem' }}>
-        <div className="animate-pulse" style={{ background: 'var(--primary-fixed)', padding: '1.5rem', borderRadius: '50%' }}>
-           <Loader2 className="animate-spin" size={32} color="var(--primary)" />
+      <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+          <div className="skeleton skeleton-line" style={{ width: '38%', height: '18px' }} />
+          <Loader2 className="animate-spin" size={20} color="var(--primary)" />
         </div>
-        <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Generating comprehensive summaries...</p>
+        <div className="skeleton-card" style={{ padding: '1rem' }}>
+          <div className="skeleton skeleton-line" style={{ width: '24%', marginBottom: '0.75rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '92%', marginBottom: '0.6rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '86%', marginBottom: '0.6rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '70%' }} />
+        </div>
+        <div className="skeleton-card" style={{ padding: '1rem' }}>
+          <div className="skeleton skeleton-line" style={{ width: '30%', marginBottom: '0.9rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '88%', marginBottom: '0.6rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '78%', marginBottom: '0.6rem' }} />
+          <div className="skeleton skeleton-line" style={{ width: '64%' }} />
+        </div>
+        <p style={{ color: 'var(--text-secondary)', fontWeight: 500, marginTop: 'auto', textAlign: 'center' }}>
+          Building summaries in the background...
+        </p>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !hasVisibleContent) {
     return (
       <div className="glass-panel" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
         <AlignLeft size={32} color="var(--danger)" />
@@ -96,6 +119,31 @@ export default function SummaryDashboard({ videoId, onTimestampClick }) {
 
   return (
     <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', height: '100%', overflowY: 'auto' }}>
+      {isProcessing && (previewTitle || previewSummary) && (
+        <section className="fade-in" style={{
+          border: '1px solid var(--outline-variant)',
+          background: 'rgba(255,255,255,0.76)',
+          padding: '1rem 1.1rem',
+          borderRadius: '1rem'
+        }}>
+          <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+            Instant Preview
+          </div>
+          <div style={{ fontWeight: 700, color: 'var(--primary)', marginBottom: '0.4rem' }}>
+            {previewTitle || 'Processing video'}
+          </div>
+          <p style={{ margin: 0, color: 'var(--text-primary)', lineHeight: 1.7 }}>
+            {previewSummary || 'Final transcript processing is running in the background.'}
+          </p>
+        </section>
+      )}
+
+      {loading && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+          <Loader2 className="animate-spin" size={16} />
+          Refreshing final transcript analysis...
+        </div>
+      )}
 
       {quality && (
         <section className="fade-in" style={{ 
