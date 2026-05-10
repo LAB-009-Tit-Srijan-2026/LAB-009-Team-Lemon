@@ -45,13 +45,13 @@ function App() {
         {/* Hero Section - Only show when no video or as top section */}
         {!videoId && (
           <>
-            <section style={{
+            <section className="hero-section" style={{
               textAlign: 'center',
               maxWidth: '1000px',
               margin: '6rem auto 4rem',
               padding: '0 2rem'
             }}>
-              <div className="fade-in" style={{
+              <div className="hero-badge fade-in" style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.5rem',
@@ -73,7 +73,7 @@ function App() {
                 Summarizer
               </h1>
 
-              <p className="fade-in" style={{ fontSize: '1.4rem', color: 'var(--on-surface-variant)', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: 1.6 }}>
+              <p className="hero-subtitle fade-in" style={{ fontSize: '1.4rem', color: 'var(--on-surface-variant)', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: 1.6 }}>
                 Alexandria is the industry's <b>most intelligent</b>—get expert-level AI summaries, key moments,
                 and mind maps. All in one click with no prompts required.
               </p>
@@ -123,7 +123,7 @@ function App() {
             {/* Steps Section */}
             <section className="section-container">
               <h2 className="section-title">How to Summarize Videos with Alexandria?</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
+              <div className="step-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
                 <div className="step-card fade-in">
                   <div className="step-number">1</div>
                   <h3 style={{ marginBottom: '1rem' }}>Paste a video link or upload</h3>
@@ -143,7 +143,7 @@ function App() {
             </section>
 
             {/* Why Choose Section */}
-            <section className="section-container" style={{ background: 'var(--surface-container-low)', borderRadius: '4rem', padding: '6rem 4rem' }}>
+            <section className="section-container why-choose-section" style={{ background: 'var(--surface-container-low)', borderRadius: '4rem', padding: '6rem 4rem' }}>
               <h2 className="section-title">Why Choose Alexandria Video Summarizer?</h2>
               <div className="feature-grid">
                 <div className="feature-item fade-in">
@@ -186,14 +186,14 @@ function App() {
         {/* Interactive Workspace Section */}
         {videoId && (
           <section className="fade-in" style={{ padding: '2rem', maxWidth: '1440px', margin: '0 auto' }}>
-            <div className="glass-panel atmospheric-glow" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="glass-panel atmospheric-glow workspace-header" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Analyzing Source</div>
                   <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)', fontFamily: 'Literata, serif', wordBreak: 'break-word' }}>{ingestInfo?.preview_title || ingestInfo?.source || 'unknown'}</div>
                 </div>
                 <div style={{ height: '40px', width: '1px', background: 'var(--outline-variant)', opacity: 0.3 }}></div>
-                <div style={{ display: 'flex', gap: '1.5rem' }}>
+                <div className="workspace-stats" style={{ display: 'flex', gap: '1.5rem' }}>
                   <div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Chunks</div>
                     <div style={{ fontWeight: 600 }}>{ingestInfo?.chunk_count ?? 0}</div>
@@ -212,7 +212,7 @@ function App() {
               <button className="ghost" onClick={() => { setVideoId(null); setIngestInfo(null); }} style={{ borderRadius: '12px' }}>Analyze Another Video</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2.5rem' }}>
+            <div className="workspace-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2.5rem' }}>
               {/* Left Column: Player and Chapters */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', minWidth: 0 }}>
                 <div className="atmospheric-glow" style={{ borderRadius: '1.5rem', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
@@ -222,7 +222,7 @@ function App() {
               </div>
 
               {/* Right Column: AI Insights and Chat */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', height: 'calc(100vh - 200px)', minWidth: 0 }}>
+              <div className="workspace-right-col" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', height: 'calc(100vh - 200px)', minWidth: 0 }}>
                 <div style={{ flex: '1', overflowY: 'hidden' }}>
                   <SummaryDashboard videoId={videoId} isProcessing={isProcessing} previewTitle={ingestInfo?.preview_title} previewSummary={ingestInfo?.preview_summary} onTimestampClick={handleTimestampClick} />
                 </div>
@@ -245,13 +245,13 @@ function App() {
         marginTop: '6rem'
       }}>
         <div className="font-display" style={{ fontSize: '1.2rem', italic: true }}>Alexandria</div>
-        <div style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
+        <div className="footer-links" style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
           <span>Privacy Policy</span>
           <span>Terms of Service</span>
           <span>Scholarly Impact</span>
           <span>Contact Support</span>
         </div>
-        <div>© 2024 Alexandria Editorial EdTech.</div>
+        <div>© 2025 Alexandria Editorial EdTech.</div>
       </footer>
     </>
   );
