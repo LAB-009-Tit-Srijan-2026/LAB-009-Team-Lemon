@@ -1,4 +1,3 @@
-import chromadb
 import os
 from .utils.similarity import keyword_similarity
 from .utils.transcript_store import get_chunks
@@ -8,6 +7,10 @@ from .utils.summary_helper import extractive_summary
 
 def _embeddings_enabled() -> bool:
     return os.getenv("ENABLE_EMBEDDINGS", "0").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _chroma_enabled() -> bool:
+    return os.getenv("ENABLE_CHROMA", "0").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _format_context(chunks):
@@ -59,13 +62,17 @@ def _coerce_warnings(value):
 
 def ask_question(video_id, question, history=[]):
     try:
-        client = chromadb.PersistentClient(path="./chroma_db")
-        collection = client.get_collection(name="transcripts")
-        results = collection.get(where={"video_id": video_id})
-        if not results['ids']:
-            raise Exception("No data found")
-        texts = results['metadatas']
-        embeddings = results.get('embeddings')
+        if _chroma_enabled():
+            import chromadb
+            client = chromadb.PersistentClient(path="./chroma_db")
+            collection = client.get_collection(name="transcripts")
+            results = collection.get(where={"video_id": video_id})
+            if not results['ids']:
+                raise Exception("No data found")
+            texts = results['metadatas']
+            embeddings = results.get('embeddings')
+        else:
+            raise Exception("Chroma persistence disabled")
     except Exception as e:
         print(f"ChromaDB failed: {e}, using fallback")
         texts = get_chunks(video_id)

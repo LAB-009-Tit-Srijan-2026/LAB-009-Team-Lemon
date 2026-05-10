@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, MessageSquare, Clock } from 'lucide-react';
 import { askQuestionStream } from '../api/client';
 
-export default function ChatPanel({ videoId, onTimestampClick }) {
+export default function ChatPanel({ videoId, onTimestampClick, isProcessing = false }) {
   const [question, setQuestion] = useState('');
   const [chatHistory, setChatHistory] = useState([]);
   const [isAsking, setIsAsking] = useState(false);
@@ -190,7 +190,7 @@ export default function ChatPanel({ videoId, onTimestampClick }) {
           type="text" 
           value={question} 
           onChange={(e) => setQuestion(e.target.value)} 
-          placeholder="Ask a question..." 
+          placeholder={isProcessing ? 'Ask now; answers improve as transcript finishes...' : 'Ask a question...'} 
           disabled={!videoId || isAsking}
           style={{ flex: 1, borderRadius: '24px', paddingLeft: '1.25rem', background: 'var(--surface-container-lowest)' }}
         />

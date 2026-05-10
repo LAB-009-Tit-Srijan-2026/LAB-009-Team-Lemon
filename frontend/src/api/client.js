@@ -44,6 +44,42 @@ export async function getIngestStatus(jobId) {
   return await parseResponse(response, 'Failed to get ingest status');
 }
 
+export async function getAnalysis(videoId) {
+  const response = await fetch(`${API_BASE}/analysis/${videoId}`);
+  if (response.ok) {
+    return await response.json();
+  }
+
+  if (response.status !== 404) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(result.detail || result.message || 'Failed to get analysis');
+  }
+
+  const [overall, topics, recent, timestamps, quality] = await Promise.all([
+    getOverallSummary(videoId).catch(() => null),
+    getTopicSummaries(videoId).catch(() => null),
+    getLastMinutesSummary(videoId, 5).catch(() => null),
+    getTimestamps(videoId).catch(() => null),
+    getQuality(videoId).catch(() => null),
+  ]);
+
+  const summary = overall?.summary || 'Summary is not available yet. Please ingest a video first.';
+  const topicList = Array.isArray(topics?.topics) ? topics.topics : [];
+  const timestampList = Array.isArray(timestamps?.timestamps) ? timestamps.timestamps : [];
+  const ready = !summary.startsWith('Summary is not available yet') || topicList.length > 0 || timestamps?.status === 'success';
+
+  return {
+    video_id: videoId,
+    summary,
+    topics: topicList,
+    recent_summary: recent?.summary,
+    recent_timestamp: recent?.timestamp,
+    timestamps: timestampList,
+    quality: quality?.quality,
+    status: ready ? 'success' : 'processing',
+  };
+}
+
 export async function getOverallSummary(videoId) {
   const response = await fetch(`${API_BASE}/summary/${videoId}`);
   if (!response.ok) throw new Error('Failed to get summary');

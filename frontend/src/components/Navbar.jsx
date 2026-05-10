@@ -22,20 +22,20 @@ export default function Navbar() {
         <Leaf size={28} color="var(--primary)" />
         <span className="font-display" style={{ fontSize: '1.5rem', color: 'var(--primary)', fontWeight: 700 }}>Alexandria</span>
       </div>
-      
+
       <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
         <a href="#" style={{ textDecoration: 'none', color: 'var(--on-surface-variant)', fontSize: '0.95rem', fontWeight: 500 }}>Platform</a>
         <a href="#" style={{ textDecoration: 'none', color: 'var(--on-surface-variant)', fontSize: '0.95rem', fontWeight: 500 }}>Solutions</a>
         <a href="#" style={{ textDecoration: 'none', color: 'var(--on-surface-variant)', fontSize: '0.95rem', fontWeight: 500 }}>Pricing</a>
         <a href="#" style={{ textDecoration: 'none', color: 'var(--on-surface-variant)', fontSize: '0.95rem', fontWeight: 500 }}>Resources</a>
       </div>
-      
+
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
         <button className="ghost" style={{ border: 'none', background: 'transparent' }}>Log In</button>
-        <button style={{ 
-          background: 'var(--primary)', 
-          color: '#fff', 
-          padding: '0.6rem 1.5rem', 
+        <button style={{
+          background: 'var(--primary)',
+          color: '#fff',
+          padding: '0.6rem 1.5rem',
           borderRadius: '9999px',
           boxShadow: '0 4px 12px rgba(6, 27, 14, 0.2)'
         }}>Start Building</button>
