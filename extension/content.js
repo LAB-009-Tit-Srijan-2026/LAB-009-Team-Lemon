@@ -43,7 +43,7 @@ async function ingestUrl(videoUrl) {
   const res = await fetch(`${API_BASE}/ingest`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url: videoUrl })
+    body: JSON.stringify({ video_url: videoUrl })  // backend expects 'video_url' not 'url'
   });
   if (!res.ok) throw new Error(`Ingest failed: ${res.statusText}`);
   return res.json();
@@ -52,7 +52,7 @@ async function ingestUrl(videoUrl) {
 async function pollJob(jobId, onProgress) {
   const max = 180;
   for (let i = 0; i < max; i++) {
-    const res = await fetch(`${API_BASE}/ingest/status/${jobId}`);
+    const res = await fetch(`${API_BASE}/ingest-status/${jobId}`);
     if (!res.ok) throw new Error('Status check failed');
     const job = await res.json();
     onProgress(job.progress || Math.min(10 + i * 0.5, 95), job.step_name || 'Processing…');
@@ -63,22 +63,23 @@ async function pollJob(jobId, onProgress) {
 }
 
 async function getSummary(videoId) {
-  const res = await fetch(`${API_BASE}/videos/${videoId}/summary`);
+  const res = await fetch(`${API_BASE}/summary/${videoId}`);
   if (!res.ok) return null;
   return res.json();
 }
 
 async function getTimeline(videoId) {
-  const res = await fetch(`${API_BASE}/videos/${videoId}/chapters`);
+  const res = await fetch(`${API_BASE}/timestamps/${videoId}`);
   if (!res.ok) return null;
   return res.json();
 }
 
 async function sendChatMessage(videoId, message) {
-  const res = await fetch(`${API_BASE}/videos/${videoId}/chat`, {
+  const res = await fetch(`${API_BASE}/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, history: chatHistory })
+    // backend AskRequest expects: video_id, question (not message)
+    body: JSON.stringify({ video_id: videoId, question: message })
   });
   if (!res.ok) throw new Error('Chat failed');
   return res.json();
@@ -279,7 +280,7 @@ async function runAnalysis() {
     statusEl.classList.remove('visible');
     progressCtr.classList.remove('visible');
 
-    // Render
+    // Render — summary field is 'summary', timeline field is 'timestamps'
     renderResults(videoTitle, summaryData, timelineData);
 
     analyzeBtn.disabled = false;
@@ -318,19 +319,21 @@ function renderResults(videoTitle, summaryData, timelineData) {
     summaryCard.style.display = 'block';
   }
 
-  // Timeline / Key Moments
+  // Timeline / Key Moments — backend returns { timestamps: [...] }
   const timelineCard = document.getElementById('alex-timeline-card');
   const timestampList = document.getElementById('alex-timestamp-list');
-  const chapters = timelineData?.chapters || timelineData;
+  const chapters = timelineData?.timestamps || timelineData?.chapters || timelineData;
   if (Array.isArray(chapters) && chapters.length > 0) {
     timestampList.innerHTML = '';
     chapters.forEach(ch => {
+      const timeVal = ch.time ?? ch.start_time ?? ch.timestamp ?? 0;
+      const label   = ch.label || ch.title || ch.text || '';
       const item = document.createElement('div');
       item.className = 'alex-timestamp-item';
       item.innerHTML = `
-        <span class="alex-ts-badge">${formatTime(ch.start_time ?? ch.timestamp ?? 0)}</span>
-        <span class="alex-ts-text">${ch.title || ch.text || ''}</span>`;
-      item.addEventListener('click', () => seekYouTube(ch.start_time ?? ch.timestamp ?? 0));
+        <span class="alex-ts-badge">${formatTime(timeVal)}</span>
+        <span class="alex-ts-text">${label}</span>`;
+      item.addEventListener('click', () => seekYouTube(timeVal));
       timestampList.appendChild(item);
     });
     timelineCard.style.display = 'block';
