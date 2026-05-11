@@ -1,5 +1,11 @@
 import os
 from .utils.summary_helper import summarize_by_topics, get_last_n_minutes_summary, extractive_summary
+from .utils.education_ai import (
+    analyze_educational_content,
+    get_recent_learning_summary,
+    get_smart_topics,
+    get_summary_levels,
+)
 from .utils.transcript_store import get_chunks
 from .utils.gemini_client import generate_text, gemini_available
 
@@ -116,11 +122,12 @@ def get_summary_with_method(video_id):
     if key in _summary_cache:
         return (_summary_cache[key], "cached")
 
-    full_text = " ".join([c.get('text', '') for c in chunks if c.get('text')])
-    summary = extractive_summary(full_text, num_sentences=4)
-    method = "extractive_fallback"
+    analysis = analyze_educational_content(video_id)
+    summary_levels = get_summary_levels(video_id)
+    summary = summary_levels.get("standard") or analysis.get("summary_levels", {}).get("standard", "")
+    method = "educational_ai"
 
-    if chunks and gemini_available():
+    if not summary and chunks and gemini_available():
         try:
             gemini_summary = generate_text(_build_overall_summary_prompt(chunks), temperature=0.3, max_output_tokens=512)
             if gemini_summary:
@@ -129,7 +136,12 @@ def get_summary_with_method(video_id):
         except Exception as e:
             print(f"Gemini overall summary failed: {e}")
 
-    summary = _clip(summary, 1100)
+    if not summary:
+        full_text = " ".join([c.get('text', '') for c in chunks if c.get('text')])
+        summary = extractive_summary(full_text, num_sentences=4)
+        method = "extractive_fallback"
+
+    summary = _clip(summary or summary_levels.get("tldr", ""), 1100)
     if not summary:
         summary = _clip(" ".join([c.get('text', '') for c in chunks[:8]]), 900)
 
@@ -145,8 +157,25 @@ def get_topic_summaries(video_id):
     if key in _summary_cache:
         return _summary_cache[key]
 
-    full_text = " ".join([c.get('text', '') for c in chunks])
-    topics = summarize_by_topics(full_text, chunks)
+    analysis = analyze_educational_content(video_id)
+    topics = []
+    for index, concept in enumerate(analysis.get("key_concepts", [])[:5]):
+        if not isinstance(concept, dict):
+            continue
+        topics.append(
+            {
+                'topic': concept.get('name', f'Concept {index + 1}'),
+                'summary': concept.get('why_it_matters', '') or analysis.get('summary_levels', {}).get('standard', ''),
+                'timestamp': concept.get('timestamp', 0),
+            }
+        )
+    if len(topics) < min(3, len(chunks)):
+        smart_topics = get_smart_topics(video_id)
+        if smart_topics:
+            topics = smart_topics
+    if len(topics) < min(3, len(chunks)):
+        full_text = " ".join([c.get('text', '') for c in chunks])
+        topics = summarize_by_topics(full_text, chunks)
     if len(topics) < min(3, len(chunks)):
         topics = _fallback_topics(chunks)
 
@@ -154,6 +183,10 @@ def get_topic_summaries(video_id):
     return topics
 
 def get_last_minutes_summary(video_id, minutes: int = 5):
+    result = get_recent_learning_summary(video_id, minutes)
+    if result.get("summary"):
+        return {"summary": _clip(result.get("summary", ""), 600), "timestamp": result.get("timestamp", 0)}
+
     chunks = _load_chunks(video_id)
     if not chunks:
         return {"summary": "No content available", "timestamp": 0}

@@ -23,6 +23,7 @@ from .utils.transcript_store import get_chunks
 from .utils.quick_summary import generate_quick_summary, is_gemini_error
 from .auth_routes import router as auth_router
 from .features_routes import router as features_router
+from .utils.education_ai import analyze_educational_content, get_smart_timestamps
 
 app = FastAPI(
     title="AI Learning Companion",
@@ -248,7 +249,8 @@ def root():
             "Podcast RSS feed support",
             "Export to Notion, Markdown, and Word docs",
             "Video/Audio file uploads",
-            "Save and organize video library"
+            "Save and organize video library",
+            "Educational AI analysis and smart timestamps"
         ],
         "auth_endpoints": [
             "POST /auth/signup - Create account",
@@ -441,6 +443,27 @@ def last_minutes(video_id: str, minutes: int = 5):
 @app.get("/timestamps/{video_id}")
 def timestamps(video_id: str):
     try:
+        analysis = analyze_educational_content(video_id)
+        smart_timestamps = get_smart_timestamps(video_id)
+        if smart_timestamps:
+            ts = [
+                {
+                    "time": round(float(item.get("timestamp", item.get("time", 0)) or 0), 3),
+                    "label": str(item.get("label", "Teaching moment"))[:96],
+                    "duration": 0.0,
+                    "reason": str(item.get("reason", ""))[:180],
+                }
+                for item in smart_timestamps
+            ]
+            return {
+                "video_id": video_id,
+                "timestamps": ts,
+                "count": len(ts),
+                "status": analysis.get("status", "success"),
+                "educational_score": analysis.get("educational_score", 0),
+                "teaching_mode": analysis.get("teaching_mode", "mixed"),
+            }
+
         fs = get_chunks(video_id)
         if fs:
             ts = [
@@ -503,9 +526,11 @@ def timestamps(video_id: str):
 @app.get("/analysis/{video_id}")
 def analysis(video_id: str):
     try:
-        # Use summarizer helper that can report method
-        from .summarizer import get_summary_with_method
-        summary_text, _method = get_summary_with_method(video_id)
+        intelligent = analyze_educational_content(video_id)
+        summary_text = intelligent.get("summary_levels", {}).get("standard") or intelligent.get("summary_levels", {}).get("tldr")
+        if not summary_text:
+            from .summarizer import get_summary_with_method
+            summary_text, _method = get_summary_with_method(video_id)
         topics = get_topic_summaries(video_id)
         recent = get_last_minutes_summary(video_id, 5)
         timeline = timestamps(video_id)
@@ -521,12 +546,24 @@ def analysis(video_id: str):
             "recent_timestamp": recent.get("timestamp"),
             "timestamps": timeline.get("timestamps", []),
             "quality": quality_report.get("quality"),
+            "educational_score": intelligent.get("educational_score", 0),
+            "teaching_mode": intelligent.get("teaching_mode", "mixed"),
+            "learning_objectives": intelligent.get("learning_objectives", []),
+            "key_concepts": intelligent.get("key_concepts", []),
             "status": "success" if ready else "processing",
         }
     except HTTPException:
         raise
     except Exception as e:
         print(f"Analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/analysis/intelligent/{video_id}")
+def intelligent_analysis(video_id: str):
+    try:
+        return analyze_educational_content(video_id)
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 

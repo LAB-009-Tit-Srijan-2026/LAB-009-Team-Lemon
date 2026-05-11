@@ -3,6 +3,7 @@ from .utils.similarity import keyword_similarity
 from .utils.transcript_store import get_chunks
 from .utils.gemini_client import generate_text, gemini_available
 from .utils.summary_helper import extractive_summary
+from .utils.education_ai import analyze_educational_content, build_qa_bundle
 
 
 def _embeddings_enabled() -> bool:
@@ -16,8 +17,8 @@ def _chroma_enabled() -> bool:
 def _format_context(chunks):
     lines = []
     for i, chunk in enumerate(chunks, start=1):
-        start = chunk.get('start_time', 0)
-        end = chunk.get('end_time', 0)
+        start = chunk.get('start', chunk.get('start_time', 0))
+        end = chunk.get('end', chunk.get('end_time', 0))
         lines.append(f"[{i}] ({start:.2f}-{end:.2f}s) {chunk.get('text', '').strip()}")
     return "\n".join(lines)
 
@@ -30,15 +31,15 @@ def _build_answer_prompt(question, context, history):
             turns.append(f"Q: {item.get('question', '')}\nA: {item.get('answer', '')}")
         history_text = "\n\nPrevious conversation:\n" + "\n\n".join(turns)
     return (
-        "You are Alexandria, an intelligent AI video learning companion. "
-        "Your role is to answer questions about a video using only the provided transcript context. "
-        "Write a clear, well-structured answer in fluent, natural English. "
-        "If the transcript context contains the answer, summarize it accurately and concisely. "
-        "If you cannot find the answer in the transcript, politely say so—do not guess or invent facts.\n\n"
+        "You are Alexandria, an intelligent educational AI tutor. "
+        "Answer the learner using the transcript context, the educational analysis, and the conversation history. "
+        "Focus on teaching clearly, not copying the transcript. "
+        "If the answer is supported, explain it in 2-5 clear sentences and mention the relevant teaching moment when helpful. "
+        "If the transcript does not support the answer, say so honestly and suggest what concept the learner should review next.\n\n"
         f"TRANSCRIPT CONTEXT:\n{context}\n\n"
         f"QUESTION: {question}\n"
         f"{history_text}\n\n"
-        "ANSWER (2-4 clear sentences in fluent English):"
+        "ANSWER:"
     )
 
 
@@ -64,20 +65,14 @@ def _coerce_warnings(value):
 
 def ask_question(video_id, question, history=[]):
     try:
-        if _chroma_enabled():
-            import chromadb
-            client = chromadb.PersistentClient(path="./chroma_db")
-            collection = client.get_collection(name="transcripts")
-            results = collection.get(where={"video_id": video_id})
-            if not results['ids']:
-                raise Exception("No data found")
-            texts = results['metadatas']
-            embeddings = results.get('embeddings')
-        else:
-            raise Exception("Chroma persistence disabled")
+        qa_bundle = build_qa_bundle(video_id, question, history or [], limit=4)
+        analysis = qa_bundle.get("analysis", analyze_educational_content(video_id))
+        texts = qa_bundle.get("chunks", [])
+        embeddings = None
     except Exception as e:
-        print(f"ChromaDB failed: {e}, using fallback")
+        print(f"Educational QA bundle failed: {e}, using fallback")
         texts = get_chunks(video_id)
+        analysis = analyze_educational_content(video_id)
         embeddings = None
 
     if not texts:
@@ -137,7 +132,18 @@ def ask_question(video_id, question, history=[]):
 
     selected_chunks = [texts[i] for i in top_indices if i < len(texts)] or [texts[best_idx]]
     best_chunk = selected_chunks[0]
-    timestamps = [best_chunk.get('start_time', 0), best_chunk.get('end_time', 0)]
+    timestamps = [best_chunk.get('start', best_chunk.get('start_time', 0)), best_chunk.get('end', best_chunk.get('end_time', 0))]
+
+    smart_timestamps = analysis.get("smart_timestamps", []) if isinstance(analysis, dict) else []
+    if smart_timestamps:
+        best_time = float(best_chunk.get('start_time', best_chunk.get('start', 0)) or 0)
+        closest = min(
+            smart_timestamps,
+            key=lambda item: abs(float(item.get('timestamp', item.get('time', 0)) or 0) - best_time),
+            default=None,
+        )
+        if closest:
+            timestamps = [float(closest.get('timestamp', closest.get('time', 0)) or 0), float(best_chunk.get('end', best_chunk.get('end_time', 0)) or 0)]
 
     source = str(best_chunk.get('source', '')).lower()
     if source in {"youtube_metadata", "url_only"}:
@@ -157,9 +163,19 @@ def ask_question(video_id, question, history=[]):
         quality_note = "Note: this answer is based on a moderate-confidence transcript.\n\n"
 
     context = _format_context(selected_chunks)
+    educational_context = analysis.get('qa_guidance', '') if isinstance(analysis, dict) else ''
+    if analysis and isinstance(analysis, dict):
+        concept_lines = []
+        for concept in analysis.get('key_concepts', [])[:5]:
+            if isinstance(concept, dict):
+                concept_lines.append(
+                    f"- {concept.get('name', 'Concept')} @ {concept.get('timestamp', 0)}s: {concept.get('why_it_matters', '')}"
+                )
+        if concept_lines:
+            educational_context = educational_context + "\nKey concepts:\n" + "\n".join(concept_lines)
     answer = None
     if gemini_available():
-        prompt = _build_answer_prompt(question, context, history)
+        prompt = _build_answer_prompt(question, f"{educational_context}\n\n{context}".strip(), history)
         quality_guidance = _build_quality_guidance(quality_score, quality_warnings)
         prompt = f"{quality_guidance}\n\n{prompt}"
         try:
