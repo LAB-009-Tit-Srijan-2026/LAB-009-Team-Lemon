@@ -174,6 +174,83 @@ function App() {
               </div>
             </section>
 
+            {/* V2.0 Features Section */}
+            <section className="section-container" style={{ marginTop: '6rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                <h2 className="section-title">✨ Alexandria v2.0 - New Features</h2>
+                <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', maxWidth: '700px', margin: '1rem auto' }}>
+                  Powerful new features to enhance your learning experience
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem', marginBottom: '3rem' }}>
+                {/* User Authentication */}
+                <div className="glass-panel atmospheric-glow" style={{ padding: '2rem', borderRadius: '1.5rem', border: '1px solid var(--glass-border)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👤</div>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--primary)' }}>User Authentication</h3>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>Create an account, save your sessions, and access your video library across devices. Secure JWT-based authentication.</p>
+                </div>
+
+                {/* Multi-Language */}
+                <div className="glass-panel atmospheric-glow" style={{ padding: '2rem', borderRadius: '1.5rem', border: '1px solid var(--glass-border)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🌍</div>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--primary)' }}>12 Languages</h3>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>English, Spanish, French, German, Italian, Portuguese, Japanese, Chinese, Korean, Russian, Arabic, Hindi</p>
+                </div>
+
+                {/* Spotify & Podcasts */}
+                <div className="glass-panel atmospheric-glow" style={{ padding: '2rem', borderRadius: '1.5rem', border: '1px solid var(--glass-border)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎵</div>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--primary)' }}>Spotify & Podcasts</h3>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>Summarize Spotify episodes and podcast RSS feeds. Extract key insights from audio content instantly.</p>
+                </div>
+
+                {/* Export Options */}
+                <div className="glass-panel atmospheric-glow" style={{ padding: '2rem', borderRadius: '1.5rem', border: '1px solid var(--glass-border)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📤</div>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--primary)' }}>Multiple Export Formats</h3>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>Export to Notion, Word Documents (.docx), Markdown, or Google Docs with full formatting.</p>
+                </div>
+
+                {/* Video Library */}
+                <div className="glass-panel atmospheric-glow" style={{ padding: '2rem', borderRadius: '1.5rem', border: '1px solid var(--glass-border)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📚</div>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--primary)' }}>Personal Video Library</h3>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>Save your favorite videos, organize by source, and access them anytime. Never lose important content.</p>
+                </div>
+
+                {/* Chrome Extension */}
+                <div className="glass-panel atmospheric-glow" style={{ padding: '2rem', borderRadius: '1.5rem', border: '1px solid var(--glass-border)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔌</div>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--primary)' }}>Chrome Extension</h3>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>One-click YouTube summarization directly from your browser. Professional UI with full feature support.</p>
+                </div>
+              </div>
+
+              {/* Supported Platforms */}
+              <div className="glass-panel atmospheric-glow" style={{ padding: '2.5rem', borderRadius: '1.5rem', border: '1px solid var(--glass-border)', textAlign: 'center' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--primary)' }}>📺 Supported Content Sources</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+                  <div style={{ padding: '1rem', background: 'var(--surface-container)', borderRadius: '1rem' }}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🎬</div>
+                    <div style={{ fontWeight: 600 }}>YouTube</div>
+                  </div>
+                  <div style={{ padding: '1rem', background: 'var(--surface-container)', borderRadius: '1rem' }}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🎵</div>
+                    <div style={{ fontWeight: 600 }}>Spotify</div>
+                  </div>
+                  <div style={{ padding: '1rem', background: 'var(--surface-container)', borderRadius: '1rem' }}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🎙️</div>
+                    <div style={{ fontWeight: 600 }}>Podcasts</div>
+                  </div>
+                  <div style={{ padding: '1rem', background: 'var(--surface-container)', borderRadius: '1rem' }}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📁</div>
+                    <div style={{ fontWeight: 600 }}>Local Files</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* FAQ Section */}
             <section className="section-container" style={{ maxWidth: '800px' }}>
               <h2 className="section-title" style={{ textAlign: 'left' }}>Frequently Asked Questions</h2>

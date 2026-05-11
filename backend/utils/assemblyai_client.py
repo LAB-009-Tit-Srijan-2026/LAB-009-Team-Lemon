@@ -124,3 +124,19 @@ def transcribe_uploaded_file(file_bytes: bytes, file_name: str | None = None) ->
             os.remove(temp_path)
         except OSError:
             pass
+
+
+def transcribe_from_url(audio_url: str) -> dict:
+    """Transcribe audio directly from a URL using AssemblyAI"""
+    api_key = _get_api_key()
+    if not api_key:
+        raise RuntimeError("ASSEMBLYAI_API_KEY is not configured")
+    
+    transcript = _request_json(
+        ASSEMBLYAI_TRANSCRIPT_URL,
+        method="POST",
+        headers={"authorization": api_key},
+        body=_transcript_payload(audio_url),
+    )
+    transcript_id = transcript["id"]
+    return _poll_transcript(transcript_id)

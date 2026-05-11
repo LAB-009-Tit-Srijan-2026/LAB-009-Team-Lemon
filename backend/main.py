@@ -21,12 +21,18 @@ from .summarizer import get_summary, get_topic_summaries, get_last_minutes_summa
 from .session import get_session_history, add_to_session
 from .utils.transcript_store import get_chunks
 from .utils.quick_summary import generate_quick_summary, is_gemini_error
+from .auth_routes import router as auth_router
+from .features_routes import router as features_router
 
 app = FastAPI(
     title="AI Learning Companion",
     description="RAG-based video learning assistant for LMS",
-    version="1.0.0"
+    version="2.0.0"
 )
+
+# Include new feature routers
+app.include_router(auth_router)
+app.include_router(features_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -225,13 +231,37 @@ def _run_ingest_file_job(job_id: str, video_id: str, file_bytes: bytes, file_nam
 def root():
     return {
         "message": "AI Learning Companion backend is running",
+        "version": "2.0.0",
         "docs": "http://localhost:8000/docs",
-        "features": [
+        "core_features": [
             "Contextual Q&A from video transcripts",
-            "Smart summaries (overall, topic-wise, last 5 minutes)",
+            "Smart summaries (overall, topic-wise, last N minutes)",
             "Jump-to-moment navigation via timestamps",
             "Session memory for multi-turn conversations",
             "Free AssemblyAI transcription fallback when YouTube captions are missing"
+        ],
+        "new_features": [
+            "User authentication and accounts",
+            "Session persistence",
+            "Multi-language support (12 languages)",
+            "Spotify episode support",
+            "Podcast RSS feed support",
+            "Export to Notion, Markdown, and Word docs",
+            "Video/Audio file uploads",
+            "Save and organize video library"
+        ],
+        "auth_endpoints": [
+            "POST /auth/signup - Create account",
+            "POST /auth/login - Login",
+            "GET /auth/me - Get current user",
+            "PUT /auth/preferences - Update preferences"
+        ],
+        "feature_endpoints": [
+            "POST /features/export/summary - Export summary",
+            "POST /features/ingest/spotify - Add Spotify episodes",
+            "POST /features/ingest/podcast - Add podcasts",
+            "POST /features/translate - Translate content",
+            "GET /features/languages - Get supported languages"
         ]
     }
 

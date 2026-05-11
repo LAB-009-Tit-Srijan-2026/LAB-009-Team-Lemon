@@ -1,12 +1,49 @@
 {
   "manifest_version": 3,
-  "name": "Alexandria AI",
-  "version": "1.0",
-  "description": "One-click AI video summarization for YouTube.",
+  "name": "Alexandria AI - Video Learning Companion v2.0",
+  "version": "2.0.0",
+  "description": "AI-powered video summarization with multi-language support, Spotify/Podcast integration, and export to Notion/Word/Docs",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "scripting",
+    "storage",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.youtu.be/*",
+    "*://*.spotify.com/*",
+    "*://*.podcasts.google.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Summarize with Alexandria"
+    "default_title": "Alexandria v2.0 - AI Video Learning",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
   },
-  "permissions": ["tabs", "activeTab"],
-  "host_permissions": ["*://*.youtube.com/*"]
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["*://*.youtube.com/*"]
+    }
+  ]
 }

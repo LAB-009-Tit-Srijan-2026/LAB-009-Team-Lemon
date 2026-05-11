@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alexandria - AI Learning Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 450px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+
+        .container {
+            padding: 16px;
+            min-height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .settings-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .auth-tabs, .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #999;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        input, select {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .action-btn {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .action-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .user-info p {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            padding: 6px 12px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .logout-btn:hover {
+            background: #ee5a52;
+        }
+
+        .tool-group {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tool-group:last-child {
+            border-bottom: none;
+        }
+
+        .tool-group h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .page-info {
+            background: #f5f5f5;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .output-area {
+            background: #f9f9f9;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .status {
+            background: #efe;
+            color: #3c3;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📚 Alexandria</h1>
+            <button class="settings-btn" id="settingsBtn" title="Settings">⚙️</button>
+        </div>
+
+        <!-- Auth Section -->
+        <div id="authSection" class="section">
+            <div class="auth-tabs">
+                <button class="tab-btn active" data-tab="login">Login</button>
+                <button class="tab-btn" data-tab="signup">Sign Up</button>
+            </div>
+
+            <!-- Login Tab -->
+            <div id="login-tab" class="tab-content active">
+                <form id="loginForm">
+                    <input type="email" placeholder="Email" required>
+                    <input type="password" placeholder="Password" required>
+                    <button type="submit" class="action-btn primary">Login</button>
+                </form>
+            </div>
+
+            <!-- Signup Tab -->
+            <div id="signup-tab" class="tab-content hidden">
+                <form id="signupForm">
+                    <input type="text" placeholder="Username" required>
+                    <input type="email" placeholder="Email" required>
+                    <input type="password" placeholder="Password (min 8 chars)" required>
+                    <input type="text" placeholder="Full Name (optional)">
+                    <button type="submit" class="action-btn primary">Create Account</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Section (when authenticated) -->
+        <div id="mainSection" class="section hidden">
+            <!-- User Info -->
+            <div class="user-info">
+                <p>Welcome, <span id="username"></span>! 👋</p>
+                <button id="logoutBtn" class="logout-btn">Logout</button>
+            </div>
+
+            <!-- Current Page Info -->
+            <div class="page-info" id="currentPage"></div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="summary">Summary</button>
+                <button class="tab-btn" data-tab="qa">Q&A</button>
+                <button class="tab-btn" data-tab="export">Export</button>
+                <button class="tab-btn" data-tab="tools">Tools</button>
+            </div>
+
+            <!-- Summary Tab -->
+            <div id="summary-tab" class="tab-content active">
+                <div id="summaryContent">
+                    <button id="generateSummary" class="action-btn primary" style="width: 100%;">📝 Generate Summary</button>
+                </div>
+            </div>
+
+            <!-- Q&A Tab -->
+            <div id="qa-tab" class="tab-content hidden">
+                <input type="text" id="questionInput" placeholder="Ask a question about the video...">
+                <button id="askBtn" class="action-btn primary" style="width: 100%;">💬 Ask</button>
+                <div id="qaContent" class="output-area"></div>
+            </div>
+
+            <!-- Export Tab -->
+            <div id="export-tab" class="tab-content hidden">
+                <select id="exportType">
+                    <option value="markdown">📄 Markdown</option>
+                    <option value="docx">📑 Word Document</option>
+                    <option value="notion">🔗 Notion</option>
+                </select>
+                <button id="exportBtn" class="action-btn primary" style="width: 100%; margin-top: 10px;">Export</button>
+                <div id="exportContent" class="output-area" style="display: none;"></div>
+            </div>
+
+            <!-- Tools Tab -->
+            <div id="tools-tab" class="tab-content hidden">
+                <div class="tool-group">
+                    <h3>🌐 Translate Summary</h3>
+                    <select id="languageSelect" style="width: 100%;">
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="pt">Português</option>
+                        <option value="zh">中文</option>
+                        <option value="ja">日本語</option>
+                    </select>
+                    <button id="translateBtn" class="action-btn primary" style="width: 100%; margin-top: 10px;">Translate</button>
+                </div>
+
+                <div class="tool-group">
+                    <h3>📚 Save to Library</h3>
+                    <button id="saveVideoBtn" class="action-btn primary" style="width: 100%;">Save This Video</button>
+                </div>
+
+                <div class="tool-group">
+                    <h3>🎙️ Add Podcast/Spotify</h3>
+                    <input type="text" id="streamingUrl" placeholder="Paste Spotify or podcast URL" style="width: 100%;">
+                    <button id="addStreamingBtn" class="action-btn primary" style="width: 100%; margin-top: 10px;">Add to Queue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="section loading hidden">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error" class="error hidden"></div>
+
+        <!-- Status -->
+        <div id="status" class="status hidden"></div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
