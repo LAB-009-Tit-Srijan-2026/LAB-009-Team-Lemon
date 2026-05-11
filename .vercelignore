@@ -1,0 +1,43 @@
+# Backend and Python files
+backend/
+scripts/
+*.py
+__pycache__/
+*.pyc
+venv/
+.venv/
+env/
+
+# Chrome Extension
+extension/
+
+# Database
+chroma_db/
+
+# Git and version control
+.git
+.gitignore
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation files (optional - keep if you want them)
+# EXTENSION_SETUP_QUICK_START.md
+# WEB_EXTENSION_PLAN.md
+
+# Node modules at root (if any)
+node_modules
+package-lock.json

@@ -1,4 +1,8 @@
-from .utils.env_loader import load_project_env
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from backend.utils.env_loader import load_project_env
 load_project_env()
 
 from fastapi import FastAPI, HTTPException
@@ -15,12 +19,12 @@ import os
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 from datetime import datetime
-from .ingest import ingest_video, ingest_assemblyai_file
-from .rag import ask_question
-from .summarizer import get_summary, get_topic_summaries, get_last_minutes_summary
-from .session import get_session_history, add_to_session
-from .utils.transcript_store import get_chunks
-from .utils.quick_summary import generate_quick_summary, is_gemini_error
+from backend.ingest import ingest_video, ingest_assemblyai_file
+from backend.rag import ask_question
+from backend.summarizer import get_summary, get_topic_summaries, get_last_minutes_summary
+from backend.session import get_session_history, add_to_session
+from backend.utils.transcript_store import get_chunks
+from backend.utils.quick_summary import generate_quick_summary, is_gemini_error
 
 app = FastAPI(
     title="AI Learning Companion",
